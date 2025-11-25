@@ -143,6 +143,7 @@ def generate_timetable(data: TimetableInput):
 
     # --- F. SOLVE THE MODEL ---
     solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = 10.0
     status = solver.Solve(model)
 
     # --- G. RETURN THE RESULT ---

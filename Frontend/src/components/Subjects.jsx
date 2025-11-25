@@ -2,119 +2,120 @@ import React, { useState, useEffect } from 'react';
 
 function Subjects() {
   const [subjects, setSubjects] = useState([]);
-  const [subjectName, setSubjectName] = useState('');
-  const [subjectCode, setSubjectCode] = useState('');
-  const [lecturesPerWeek, setLecturesPerWeek] = useState(1); // <-- ADDED
+  const [form, setForm] = useState({ name: '', code: '', lectures_per_week: 1 });
   const [error, setError] = useState(null);
 
-  // Fetch all subjects
   const fetchSubjects = () => {
     fetch('http://localhost:5000/subjects/')
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => setSubjects(data))
-      .catch(err => console.log('Error fetching subjects: ', err));
+      .catch(err => console.error(err));
   };
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  useEffect(() => fetchSubjects(), []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setError(null);
-
-    const newSubject = {
-      name: subjectName,
-      code: subjectCode,
-      lectures_per_week: lecturesPerWeek // <-- ADDED
-    };
-
     fetch('http://localhost:5000/subjects/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSubject)
+      body: JSON.stringify(form)
     })
     .then(res => res.json())
-    .then(data => {
-      if (data.includes('Error')) {
-        setError(data);
-      } else {
-        fetchSubjects(); // Refresh list
-        setSubjectName('');
-        setSubjectCode('');
-        setLecturesPerWeek(1); // <-- ADDED
-      }
+    .then(() => {
+      fetchSubjects();
+      setForm({ name: '', code: '', lectures_per_week: 1 });
     })
-    .catch(err => {
-      setError('Error connecting to server.');
-      console.log(err);
-    });
+    .catch(() => setError('Failed to add subject'));
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Manage Subjects</h2>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Form Section */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4">Add New Subject</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="text"
-            placeholder="Subject Name (e.g., Mathematics)"
-            className="p-2 border rounded"
-            value={subjectName}
-            onChange={(e) => setSubjectName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Subject Code (e.g., MATH101)"
-            className="p-2 border rounded"
-            value={subjectCode}
-            onChange={(e) => setSubjectCode(e.target.value)}
-          />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* LEFT: FORM */}
+      <div className="lg:col-span-1">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 sticky top-24">
+          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <span className="bg-blue-100 text-blue-600 p-2 rounded-lg">📚</span>
+            Add Subject
+          </h2>
           
-          {/* --- NEW INPUT FIELD --- */}
-          <input
-            type="number"
-            placeholder="Lectures per Week"
-            className="p-2 border rounded"
-            value={lecturesPerWeek}
-            onChange={(e) => setLecturesPerWeek(Number(e.target.value))}
-            min="1"
-          />
-          {/* ----------------------- */}
-
-        </div>
-        <button type="submit" className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
-          Add Subject
-        </button>
-      </form>
-
-      {/* List Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Current Subjects</h3>
-        <ul className="space-y-2">
-          {subjects.map(subject => (
-            <li key={subject._id} className="p-3 bg-gray-50 rounded-md flex justify-between items-center">
-              <div>
-                <span className="font-semibold">{subject.name}</span>
-                <span className="text-gray-600 ml-2">({subject.code})</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Subject Name</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Mathematics"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                value={form.name}
+                onChange={e => setForm({...form, name: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Subject Code</label>
+              <input 
+                type="text" 
+                placeholder="e.g. MATH101"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                value={form.code}
+                onChange={e => setForm({...form, code: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Weekly Lectures</label>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="range" 
+                  min="1" max="10"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                  value={form.lectures_per_week}
+                  onChange={e => setForm({...form, lectures_per_week: Number(e.target.value)})}
+                />
+                <span className="font-bold text-blue-600 text-xl w-8">{form.lectures_per_week}</span>
               </div>
-              {/* --- DISPLAY THE NEW FIELD --- */}
-              <span className="text-gray-700 font-medium">
-                {subject.lectures_per_week} lectures/week
-              </span>
-              {/* --------------------------- */}
-            </li>
-          ))}
-        </ul>
+            </div>
+            <button className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition shadow-lg">
+              Save Subject
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* RIGHT: LIST */}
+      <div className="lg:col-span-2">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="font-bold text-slate-700">Existing Subjects</h3>
+            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+              {subjects.length} Total
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                <tr>
+                  <th className="p-4">Code</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4 text-center">Load (Lecs/Wk)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {subjects.map((sub) => (
+                  <tr key={sub._id} className="hover:bg-blue-50/50 transition">
+                    <td className="p-4 font-mono text-sm text-slate-500">{sub.code}</td>
+                    <td className="p-4 font-bold text-slate-800">{sub.name}</td>
+                    <td className="p-4 text-center">
+                      <span className="inline-block bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-md text-xs">
+                        {sub.lectures_per_week}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

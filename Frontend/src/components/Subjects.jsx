@@ -4,94 +4,117 @@ function Subjects() {
   const [subjects, setSubjects] = useState([]);
   const [subjectName, setSubjectName] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
+  const [lecturesPerWeek, setLecturesPerWeek] = useState(1); // <-- ADDED
+  const [error, setError] = useState(null);
 
-  // Function to fetch subjects
+  // Fetch all subjects
   const fetchSubjects = () => {
-    fetch('http://localhost:5000/subjects')
+    fetch('http://localhost:5000/subjects/')
       .then(response => response.json())
       .then(data => setSubjects(data))
-      .catch(error => console.error('Error fetching subjects:', error));
+      .catch(err => console.log('Error fetching subjects: ', err));
   };
 
-  // Fetch subjects when the component first loads
   useEffect(() => {
     fetchSubjects();
   }, []);
 
-  // Function to handle form submission
-  const handleSubmit = (event) => {
-    event.preventDefault(); // Prevent default form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError(null);
 
     const newSubject = {
       name: subjectName,
       code: subjectCode,
+      lectures_per_week: lecturesPerWeek // <-- ADDED
     };
 
     fetch('http://localhost:5000/subjects/add', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newSubject),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSubject)
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-      console.log('Success:', data);
-      // Clear the form fields
-      setSubjectName('');
-      setSubjectCode('');
-      // Re-fetch the subjects list to show the new one
-      fetchSubjects();
+      if (data.includes('Error')) {
+        setError(data);
+      } else {
+        fetchSubjects(); // Refresh list
+        setSubjectName('');
+        setSubjectCode('');
+        setLecturesPerWeek(1); // <-- ADDED
+      }
     })
-    .catch((error) => {
-      console.error('Error:', error);
+    .catch(err => {
+      setError('Error connecting to server.');
+      console.log(err);
     });
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-4">Subject Management</h1>
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">Manage Subjects</h2>
 
-      <div className="mb-8 p-4 border rounded-lg">
-        <h2 className="text-xl font-semibold mb-2">Add New Subject</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Subject Name</label>
-            <input 
-              type="text" 
-              value={subjectName} 
-              onChange={e => setSubjectName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required 
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Subject Code</label>
-            <input 
-              type="text" 
-              value={subjectCode} 
-              onChange={e => setSubjectCode(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required 
-            />
-          </div>
-          <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">
-            Add Subject
-          </button>
-        </form>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Existing Subjects</h2>
-        <div className="space-y-2">
-          {subjects.map(subject => (
-            <div key={subject._id} className="bg-gray-100 p-3 rounded-lg flex justify-between items-center">
-              <span>
-                <strong className="font-medium">{subject.name}</strong> ({subject.code})
-              </span>
-            </div>
-          ))}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
+      )}
+
+      {/* Form Section */}
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h3 className="text-xl font-semibold mb-4">Add New Subject</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input
+            type="text"
+            placeholder="Subject Name (e.g., Mathematics)"
+            className="p-2 border rounded"
+            value={subjectName}
+            onChange={(e) => setSubjectName(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Subject Code (e.g., MATH101)"
+            className="p-2 border rounded"
+            value={subjectCode}
+            onChange={(e) => setSubjectCode(e.target.value)}
+          />
+          
+          {/* --- NEW INPUT FIELD --- */}
+          <input
+            type="number"
+            placeholder="Lectures per Week"
+            className="p-2 border rounded"
+            value={lecturesPerWeek}
+            onChange={(e) => setLecturesPerWeek(Number(e.target.value))}
+            min="1"
+          />
+          {/* ----------------------- */}
+
+        </div>
+        <button type="submit" className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
+          Add Subject
+        </button>
+      </form>
+
+      {/* List Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h3 className="text-xl font-semibold mb-4">Current Subjects</h3>
+        <ul className="space-y-2">
+          {subjects.map(subject => (
+            <li key={subject._id} className="p-3 bg-gray-50 rounded-md flex justify-between items-center">
+              <div>
+                <span className="font-semibold">{subject.name}</span>
+                <span className="text-gray-600 ml-2">({subject.code})</span>
+              </div>
+              {/* --- DISPLAY THE NEW FIELD --- */}
+              <span className="text-gray-700 font-medium">
+                {subject.lectures_per_week} lectures/week
+              </span>
+              {/* --------------------------- */}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

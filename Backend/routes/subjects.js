@@ -12,17 +12,23 @@ router.route('/').get((req, res) => {
 // === ADD A NEW SUBJECT ===
 // Handles incoming HTTP POST requests on the /subjects/add URL
 router.route('/add').post((req, res) => {
-  const name = req.body.name; // Get the name from the incoming request body
-  const code = req.body.code; // Get the code from the incoming request body
+  
+  // ...and replace it with this code
+  const { name, code, lectures_per_week } = req.body; // <-- Updated
+
+  if (!name || !code || !lectures_per_week) { // <-- Updated
+    return res.status(400).json('Error: Please enter all fields.');
+  }
 
   const newSubject = new Subject({
     name,
     code,
+    lectures_per_week: Number(lectures_per_week) // <-- Updated
   });
 
-  newSubject.save() // Save the new subject to the database
-    .then(() => res.json('Subject added!')) // Return a success message
-    .catch(err => res.status(400).json('Error: ' + err)); // Or return an error message
+  newSubject.save()
+    .then(() => res.json('Subject added!'))
+    .catch(err => res.status(400).json('Error: ' + err));
 });
 
 module.exports = router; // Export the router

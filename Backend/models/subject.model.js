@@ -1,25 +1,32 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// This is the blueprint for a subject
 const subjectSchema = new Schema({
-  name: { 
-    type: String, 
-    required: true, // A subject must have a name
-    trim: true      // Removes whitespace from the beginning and end
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    minlength: 2
   },
-  code: { 
-    type: String, 
-    required: true, // A subject must have a code
-    unique: true,   // No two subjects can have the same code
-    trim: true 
+  code: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
   },
+  // --- ADD THIS NEW FIELD ---
+  lectures_per_week: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1
+  }
+  // -------------------------
 }, {
-  timestamps: true, // Automatically adds 'createdAt' and 'updatedAt' fields
+  timestamps: true,
 });
 
-// Create the model from the schema
 const Subject = mongoose.model('Subject', subjectSchema);
 
-// Export the model so other files can use it
 module.exports = Subject;

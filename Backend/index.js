@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const axios = require('axios'); // <-- Declared ONCE
+const Subject = require('./models/subject.model'); // <-- Declared ONCE
+const Teacher = require('./models/teacher.model'); // <-- Declared ONCE
+const Classroom = require('./models/classroom.model'); // <-- Declared ONCE
 
 require('dotenv').config(); 
 
@@ -26,15 +30,8 @@ app.use('/subjects', subjectsRouter);
 app.use('/teachers', teachersRouter);
 app.use('/classrooms', classroomsRouter);
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-const axios = require('axios');
-const Subject = require('./models/subject.model');
-const Teacher = require('./models/teacher.model');
-const Classroom = require('./models/classroom.model');
-
-// The "Middleman" Endpoint
+// --- GENERATE TIMETABLE ROUTE ---
+// (Must be defined *before* app.listen)
 app.post('/generate-timetable', async (req, res) => {
   try {
     // 1. Fetch all data from MongoDB
@@ -44,11 +41,15 @@ app.post('/generate-timetable', async (req, res) => {
 
     // 2. Format the data for the Python service
     const payload = {
-      subjects: subjects.map(s => ({ name: s.name, code: s.code })),
+      subjects: subjects.map(s => ({ 
+        name: s.name, 
+        code: s.code, 
+        lectures_per_week: s.lectures_per_week
+      })),
       teachers: teachers.map(t => ({ name: t.name })),
       classrooms: classrooms.map(c => ({ name: c.name, capacity: c.capacity })),
     };
-
+    
     console.log('Sending data to Python solver...');
 
     // 3. Send the data to the Python solver service
@@ -58,7 +59,18 @@ app.post('/generate-timetable', async (req, res) => {
     res.json(pythonResponse.data);
 
   } catch (error) {
-    console.error('Error communicating with Python service:', error.message);
+    if (error.response) {
+      console.error('Error from Python service:', error.response.data);
+    } else {
+      console.error('Error communicating with Python service:', error.message);
+    }
     res.status(500).json({ error: 'Failed to communicate with the solver service.' });
   }
+});
+
+
+// --- START THE SERVER ---
+// (Must be the LAST thing in the file)
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
